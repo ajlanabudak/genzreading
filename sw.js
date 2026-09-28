@@ -1,6 +1,6 @@
 // GenZ Reading — service worker
 // Bump CACHE_NAME on every content/app update to invalidate old caches.
-const CACHE_NAME = "genz-reading-v5-secure";
+const CACHE_NAME = "genz-reading-e2730eb140";
 const AUDIO_CACHE = "genz-reading-audio";   // sürümden bağımsız: sesler yeniden inmesin
 const CORE_ASSETS = [
   "./",
@@ -31,7 +31,8 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      // Ses önbelleği (AUDIO_CACHE) sürüm yükseltmesinde SİLİNMEZ; yalnızca eski uygulama önbellekleri gider.
+      Promise.all(keys.filter((k) => k !== CACHE_NAME && k !== AUDIO_CACHE).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
@@ -45,7 +46,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   const isCoreAsset = url.origin === self.location.origin;
 
-  // Ses dosyaları (GitHub'da barındırılıyor): önce önbellek. Bir kez indirilen
+  // Ses dosyaları (uygulamayla aynı yerden, /audio/ altından): önce önbellek. Bir kez indirilen
   // hikaye sesi çevrimdışı da çalar ve sürüm yükseltmelerinde silinmez —
   // bu yüzden ayrı ve sürümsüz bir önbellekte tutulur.
   if (/\/audio\//.test(url.pathname)) {

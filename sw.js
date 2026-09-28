@@ -1,6 +1,6 @@
 // GenZ Reading — service worker
 // Bump CACHE_NAME on every content/app update to invalidate old caches.
-const CACHE_NAME = "genz-reading-cfed83b0a1";
+const CACHE_NAME = "genz-reading-74b25a989b";
 const AUDIO_CACHE = "genz-reading-audio";   // sürümden bağımsız: sesler yeniden inmesin
 const CORE_ASSETS = [
   "./",
@@ -56,6 +56,18 @@ self.addEventListener("fetch", (event) => {
     } else {
       event.respondWith(serveAudio(req));
     }
+    return;
+  }
+
+  // Sayfanın kendisi (index.html, ogretmen.html): ÖNCE AĞ. Yeni sürüm yayınlanınca bir sonraki açılışta
+  // hemen gelir; çevrimdışıysa önbellekteki son sürüm açılır.
+  if (isCoreAsset && (req.mode === "navigate" || /\.html$/.test(url.pathname) || url.pathname.endsWith("/"))) {
+    event.respondWith(
+      fetch(req).then((res) => {
+        if (res.ok) { const c = res.clone(); caches.open(CACHE_NAME).then((cache) => cache.put(req, c)); }
+        return res;
+      }).catch(() => caches.match(req).then((hit) => hit || caches.match("./index.html")))
+    );
     return;
   }
 

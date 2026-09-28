@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>GenZ Reading — Öğretmen Paneli</title>
+<meta name="description" content="Öğrenci ilerlemesini izle, beceri bazlı rubrikle şekillendirici geri bildirim ver, PDF rapor al." />
+<meta name="theme-color" content="#F7F4EE" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Literata:opsz,wght@18..144,400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#F7F4EE; --surface:#FFFFFF; --surface-alt:#EFEBE1; --line:#E6E1D6;
+  --ink:#211D17; --ink-dim:#6C6659; --ink-mute:#9A9384;
+  --brand:#CC7A52; --brand-ink:#FFFFFF;
+  --good:#3F9A63; --warn:#C98A2E; --bad:#C2483C;
+  --font-display:"Space Grotesk","Segoe UI",system-ui,sans-serif;
+  --font-body:"Literata",Georgia,serif;
+  --r-tile:14px; --r-card:18px; --r-pill:999px;
+  color-scheme:light;
+  --royal:#7851A9;
+}
+/* dark theme — Royal Purple surfaces, Anthropic cream text and clay accent */
+:root[data-theme="dark"]{
+  --bg:#1C1428; --surface:#261B38; --surface-alt:#33254A; --line:#3E2F57;
+  --ink:#F3EEE6; --ink-dim:#CFC4B4; --ink-mute:#9C90A8;
+  --brand:#D98A63; --brand-ink:#1C1428;
+  --good:#5DBB82; --warn:#E0A94A; --bad:#E0675A; --royal:#9B76CF;
+  color-scheme:dark;
+}
+:root[data-theme="dark"] .role{background:rgba(155,118,207,.2);color:#C9B2EA}
+:root[data-theme="dark"] .tabs button.active{background:var(--royal);border-color:var(--royal);color:#fff}
+:root[data-theme="dark"] .student-row.active{border-color:var(--royal);box-shadow:0 0 0 1px var(--royal)}
+.theme-toggle{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;
+  border-radius:50%;background:var(--surface);border:1px solid var(--line);color:var(--ink-dim);cursor:pointer;padding:0}
+.theme-toggle svg{width:16px;height:16px}
+.theme-toggle .ico-sun{display:none}
+:root[data-theme="dark"] .theme-toggle .ico-sun{display:block}
+:root[data-theme="dark"] .theme-toggle .ico-moon{display:none}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.5}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;letter-spacing:-0.01em;margin:0}
+button{font-family:inherit;cursor:pointer}
+svg{width:20px;height:20px;flex:none}
+.hidden{display:none !important}
+
+.wrap{max-width:1000px;margin:0 auto;padding:20px 18px 80px}
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.wordmark{font-family:var(--font-display);font-size:1.1rem;font-weight:700}
+.wordmark .dot{color:var(--brand)}
+.role{font-family:var(--font-display);font-size:.7rem;font-weight:600;color:var(--brand);
+  background:rgba(204,122,82,.12);border-radius:var(--r-pill);padding:4px 10px}
+.topbar .spacer{flex:1}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:18px;margin-bottom:14px}
+.card h2{font-size:1.05rem;margin-bottom:6px}
+.card .hint{font-size:.85rem;color:var(--ink-dim);margin:0 0 12px}
+
+.btn{font-family:var(--font-display);font-weight:600;font-size:.85rem;border:none;
+  border-radius:var(--r-pill);padding:11px 18px;display:inline-flex;align-items:center;gap:7px;justify-content:center}
+.btn-primary{background:var(--brand);color:var(--brand-ink)}
+.btn-ghost{background:none;color:var(--ink-dim);border:1px solid var(--line)}
+.btn-sm{padding:7px 13px;font-size:.75rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+textarea,input,select{width:100%;font-family:var(--font-display);font-size:.85rem;color:var(--ink);
+  background:var(--bg);border:1px solid var(--line);border-radius:var(--r-tile);padding:10px 12px}
+textarea{resize:vertical;line-height:1.5}
+textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.7rem;word-break:break-all}
+label.fld{display:block;font-family:var(--font-display);font-size:.72rem;font-weight:600;
+  color:var(--ink-mute);margin:12px 0 5px;letter-spacing:.02em}
+
+/* ---- student list ---- */
+.student-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r-tile);margin-bottom:8px;cursor:pointer}
+.student-row.active{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--surface-alt);color:var(--ink);
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:.8rem;flex:none}
+.student-row .meta{flex:1;min-width:0}
+.student-row .nm{font-family:var(--font-display);font-weight:600;font-size:.92rem}
+.student-row .sub{font-size:.75rem;color:var(--ink-mute);font-family:var(--font-display)}
+.student-row .del{background:none;border:none;color:var(--ink-mute);font-size:1.1rem;padding:4px 8px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-tile);padding:12px;text-align:center}
+.stat .n{font-family:var(--font-display);font-size:1.5rem;font-weight:700}
+.stat .l{font-family:var(--font-display);font-size:.65rem;color:var(--ink-mute);letter-spacing:.02em}
+
+/* ---- skill bars ---- */
+.skill{margin-bottom:12px}
+.skill .hd{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--font-display);
+  font-size:.82rem;margin-bottom:5px}
+.skill .pct{font-weight:700}
+.bar{height:8px;background:var(--surface-alt);border-radius:var(--r-pill);overflow:hidden}
+.bar span{display:block;height:100%;border-radius:var(--r-pill)}
+.lv-strong{background:var(--good)} .lv-ok{background:var(--warn)} .lv-weak{background:var(--bad)}
+.tag{font-family:var(--font-display);font-size:.65rem;font-weight:600;border-radius:var(--r-pill);
+  padding:2px 8px;margin-left:8px}
+.tag.lv-strong{background:rgba(63,154,99,.15);color:var(--good)}
+.tag.lv-ok{background:rgba(201,138,46,.15);color:var(--warn)}
+.tag.lv-weak{background:rgba(194,72,60,.15);color:var(--bad)}
+.tag.lv-none{background:var(--surface-alt);color:var(--ink-mute)}
+
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+th{font-family:var(--font-display);font-size:.68rem;color:var(--ink-mute);letter-spacing:.03em;text-transform:uppercase}
+td.num{font-family:var(--font-display);text-align:right;white-space:nowrap}
+.scroll-x{overflow-x:auto}
+
+.note{font-size:.8rem;color:var(--ink-dim);background:var(--surface-alt);border-radius:var(--r-tile);padding:11px 13px}
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.tabs button{font-family:var(--font-display);font-size:.8rem;font-weight:600;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink-dim);border-radius:var(--r-pill);padding:8px 15px}
+.tabs button.active{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+
+.bank{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.bank button{font-family:var(--font-display);font-size:.72rem;border:1px dashed var(--line);
+  background:var(--bg);color:var(--ink-dim);border-radius:var(--r-pill);padding:5px 11px}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);
+  color:var(--surface);font-family:var(--font-display);font-size:.85rem;font-weight:600;
+  padding:11px 18px;border-radius:var(--r-pill);z-index:90;box-shadow:0 8px 24px rgba(33,29,23,.25)}
+
+/* ================= PRINT / PDF ================= */
+/* The report is normal DOM that becomes the whole page when printing,
+   so "PDF olarak kaydet" in the browser print dialog produces a clean file
+   with no app furniture. No PDF library needed. */
+#report{display:none}
+@media print{
+  @page{size:A4;margin:16mm 14mm}
+  /* the report is always printed as a light document, whatever the screen theme */
+  :root,:root[data-theme="dark"]{--bg:#fff;--surface:#fff;--ink:#000;--ink-dim:#444;--ink-mute:#666;--line:#ccc;color-scheme:light}
+  body{background:#fff}
+  .wrap{display:none !important}
+  .toast{display:none !important}
+  #report{display:block !important;max-width:none;margin:0;padding:0;color:#000;font-size:10.5pt}
+  #report .rp-head{display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:2px solid #211D17;padding-bottom:8px;margin-bottom:16px}
+  #report h1{font-size:16pt;margin:0}
+  #report .rp-sub{font-family:var(--font-display);font-size:9pt;color:#555;text-align:right;line-height:1.4}
+  #report h2{font-size:11.5pt;margin:16px 0 7px;padding-bottom:3px;border-bottom:1px solid #ccc}
+  #report .rp-stats{display:flex;gap:0;border:1px solid #ccc;border-radius:4px;overflow:hidden;margin-bottom:6px}
+  #report .rp-stats div{flex:1;padding:8px 6px;text-align:center;border-right:1px solid #ccc}
+  #report .rp-stats div:last-child{border-right:none}
+  #report .rp-stats .n{font-family:var(--font-display);font-size:13pt;font-weight:700;display:block}
+  #report .rp-stats .l{font-family:var(--font-display);font-size:7pt;color:#666;letter-spacing:.03em}
+  #report table{font-size:9pt}
+  #report th,#report td{padding:5px 4px;border-bottom:1px solid #ddd}
+  #report .rp-skill{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:9.5pt}
+  #report .rp-skill .nm{width:120px;font-family:var(--font-display);font-weight:600}
+  #report .rp-skill .track{flex:1;height:7px;background:#eee;border:1px solid #ddd;border-radius:4px;overflow:hidden}
+  #report .rp-skill .track span{display:block;height:100%;background:#555}
+  #report .rp-skill .vl{width:78px;text-align:right;font-family:var(--font-display);font-size:8.5pt}
+  #report .rp-fb{border:1px solid #bbb;border-left:3px solid #211D17;border-radius:3px;padding:9px 11px;margin-bottom:8px}
+  #report .rp-fb .k{font-family:var(--font-display);font-size:8pt;color:#666;letter-spacing:.03em;display:block;margin-bottom:3px}
+  #report .rp-foot{margin-top:20px;padding-top:7px;border-top:1px solid #ccc;
+    font-family:var(--font-display);font-size:7.5pt;color:#777;display:flex;justify-content:space-between}
+  #report .pb{page-break-before:always}
+  #report .avoid{page-break-inside:avoid}
+}
+</style>
+<script>
+(function(){try{var t=localStorage.getItem('genz-theme');
+if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}
+document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <span class="wordmark">GenZ<span class="dot">•</span>Reading</span>
+    <span class="role">Öğretmen Paneli</span>
+    <span class="spacer"></span>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Tema değiştir" title="Karanlık / aydınlık mod">
+      <svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+    <button class="btn btn-ghost btn-sm" id="btn-export-class">Sınıfı Yedekle</button>
+    <button class="btn btn-ghost btn-sm" id="btn-import-class">Yedeği Yükle</button>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button data-tab="students" class="active">Öğrenciler</button>
+    <button data-tab="detail">Öğrenci Detayı</button>
+    <button data-tab="class">Sınıf Geneli</button>
+    <button data-tab="reports">Rapor / PDF</button>
+  </div>
+
+  <div id="panel"></div>
+</div>
+
+<!-- Printed report is rendered here; hidden on screen, full page in print. -->
+<div id="report"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  const KEY = "genz-reading-teacher-v1";
+
+  const SKILLS = {
+    "detail":    "Detay bulma",
+    "main-idea": "Ana fikri bulma",
+    "inference": "Çıkarım yapma",
+    "tone":      "Yazarın tonu",
+    "vocab":     "Bağlamdan kelime"
+  };
+  const THEMES = {
+    global:"Küresel Vatandaşlık", pop:"Popüler Kültür", tech:"Teknoloji",
+    eco:"Sürdürülebilirlik", wellness:"Psikoloji & Sağlık"
+  };
+  // Formative comment bank — short, actionable, and phrased as a next step
+  // rather than a verdict, because the point is to move the learner forward.
+  const BANK = {
+    "detail": [
+      "Metne dönüp cevabın geçtiği cümlenin altını çizmeyi dene.",
+      "Soruyu okuduktan sonra metinde anahtar kelimeyi ara.",
+      "Detay sorularında acele etme; iki seçenek arasında kaldığında metne bak."
+    ],
+    "main-idea": [
+      "Her paragrafı okuduktan sonra tek cümleyle özetlemeyi dene.",
+      "Ana fikir genellikle bir detayda değil, metnin tamamında saklıdır.",
+      "Başlık ile son paragrafı birlikte düşün."
+    ],
+    "inference": [
+      "Yazarın doğrudan söylemediği ama ima ettiği şeyi sor: 'Bundan ne çıkar?'",
+      "Çıkarım sorularında metinde birebir geçen seçenek çoğu zaman yanlıştır.",
+      "Bir sonuca varmadan önce kendine 'metin bunu destekliyor mu?' diye sor."
+    ],
+    "tone": [
+      "Yazarın seçtiği sıfatlara dikkat et; ton oralarda gizlidir.",
+      "Yazar bir görüşü savunuyor mu, yoksa iki tarafı da mı veriyor?",
+      "Metnin son paragrafı genellikle yazarın tavrını ele verir."
+    ],
+    "vocab": [
+      "Bilmediğin kelimenin anlamını cümlenin tamamından tahmin etmeyi dene.",
+      "Kelimeye dokunmadan önce bağlamdan bir tahmin yürüt, sonra kontrol et.",
+      "Kelime kartlarında 'Zor' dediğin kelimeleri hikayede tekrar gör."
+    ],
+    "genel": [
+      "Düzenli okuma sayısı arttıkça anlama hızın da artacak.",
+      "Haftada üç kısa metin, ayda bir uzun metinden daha etkili.",
+      "Zorlandığın temadan kaçma; seni asıl orası geliştiriyor."
+    ]
+  };
+
+  // ------------------------------------------------ state
+  let db = load();
+  let activeId = db.students[0] ? db.students[0].id : null;
+  let tab = "students";
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) return Object.assign({ teacher: "", className: "", students: [] }, JSON.parse(raw));
+    } catch (e) {}
+    return { teacher: "", className: "", students: [] };
+  }
+  function save() { localStorage.setItem(KEY, JSON.stringify(db)); }
+
+  // ------------------------------------------------ helpers
+  const esc = (s) => { const d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; };
+
+  function b64decode(b64) {
+    const bin = atob(String(b64).replace(/-/g, "+").replace(/_/g, "/"));
+    return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+  }
+  function b64encode(str) {
+    const bytes = new TextEncoder().encode(str);
+    let bin = ""; bytes.forEach((b) => { bin += String.fromCharCode(b); });
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_");
+  }
+
+  function toast(msg) {
+    const t = document.createElement("div");
+    t.className = "toast"; t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2600);
+  }
+
+  const pct = (c, t) => (t ? Math.round((c / t) * 100) : null);
+  function band(p) {
+    if (p === null) return "none";
+    if (p >= 80) return "strong";
+    if (p >= 60) return "ok";
+    return "weak";
+  }
+  const BAND_TR = { strong: "Güçlü", ok: "Gelişiyor", weak: "Destek gerekli", none: "Veri yok" };
+
+  function student(id) { return db.students.find((s) => s.id === id); }
+
+  function skillRows(s) {
+    return Object.keys(SKILLS).map((k) => {
+      const st = (s.data.skillStats || {})[k] || { correct: 0, total: 0 };
+      const p = pct(st.correct, st.total);
+      return { key: k, label: SKILLS[k], ...st, pct: p, band: band(p) };
+    });
+  }
+
+  function overallPct(s) {
+    const st = s.data.stories || [];
+    const c = st.reduce((a, x) => a + (x.s || 0), 0);
+    const t = st.reduce((a, x) => a + (x.n || 0), 0);
+    return pct(c, t);
+  }
+
+  function levelCounts(s) {
+    // Yeni kodlarda seviye dağılımı özet alanda hazır gelir (kod uzunluğu için
+    // ayrıntı listesi son 40 hikayeyle sınırlı); eski kodlarda listeden sayılır.
+    if (s.data.byLevel && Object.keys(s.data.byLevel).length) return s.data.byLevel;
+    const out = {};
+    (s.data.stories || []).forEach((x) => { out[x.lv] = (out[x.lv] || 0) + 1; });
+    return out;
+  }
+
+  // Tamamlanan toplam hikaye sayısı (özet alan varsa onu kullan).
+  function storyCount(s) {
+    return typeof s.data.storiesDone === "number" ? s.data.storiesDone : (s.data.stories || []).length;
+  }
+
+  // ------------------------------------------------ import student code
+  function addStudentFromCode(raw) {
+    const code = (raw || "").trim();
+    if (!code) throw new Error("Kod boş.");
+    if (!code.startsWith("GZR1.")) throw new Error("Bu bir öğrenci ilerleme kodu değil.");
+    const data = JSON.parse(b64decode(code.slice(5)));
+    if (!data || !Array.isArray(data.stories)) throw new Error("Kod bozuk görünüyor.");
+
+    const existing = db.students.find(
+      (s) => s.data.name.toLocaleLowerCase("tr") === String(data.name).toLocaleLowerCase("tr"));
+    if (existing) {
+      existing.data = data;
+      existing.updated = new Date().toISOString();
+      activeId = existing.id;
+      save();
+      return { updated: true, name: data.name };
+    }
+    const id = "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    db.students.push({
+      id, data, updated: new Date().toISOString(),
+      feedback: { rubric: {}, storyNotes: {}, overall: "", next: "" }
+    });
+    activeId = id;
+    save();
+    return { updated: false, name: data.name };
+  }
+
+  // ------------------------------------------------ views
+  function viewStudents() {
+    const rows = db.students.map((s) => {
+      const p = overallPct(s);
+      return `
+        <div class="student-row ${s.id === activeId ? "active" : ""}" data-pick="${s.id}">
+          <span class="avatar">${esc((s.data.name || "?").trim().charAt(0).toUpperCase())}</span>
+          <span class="meta">
+            <span class="nm">${esc(s.data.name)}</span>
+            <span class="sub">${storyCount(s)} hikaye ·
+              ${p === null ? "—" : "%" + p} başarı · güncellendi ${esc((s.updated || "").slice(0, 10))}</span>
+          </span>
+          <button class="del" data-del="${s.id}" title="Sil">×</button>
+        </div>`;
+    }).join("");
+
+    return `
+      <div class="card">
+        <h2>Sınıf bilgisi</h2>
+        <p class="hint">Raporun üstünde görünür.</p>
+        <label class="fld">ÖĞRETMEN</label>
+        <input id="f-teacher" value="${esc(db.teacher)}" placeholder="Ad Soyad" />
+        <label class="fld">SINIF</label>
+        <input id="f-class" value="${esc(db.className)}" placeholder="Örn. 10-B" />
+      </div>
+
+      <div class="card">
+        <h2>Öğrenci ekle</h2>
+        <p class="hint">Öğrencinin uygulamadaki Profil ekranından ürettiği kodu yapıştır.
+          Aynı isim tekrar eklenirse kaydı güncellenir.</p>
+        <textarea id="in-code" class="code" rows="4" placeholder="GZR1...."></textarea>
+        <button class="btn btn-primary" id="btn-add" style="margin-top:10px">Kodu Oku ve Ekle</button>
+      </div>
+
+      <div class="card">
+        <h2>Öğrenciler <span style="color:var(--ink-mute);font-weight:400">(${db.students.length})</span></h2>
+        ${rows || `<p class="note">Henüz öğrenci yok. Yukarıdan bir kod ekle.</p>`}
+      </div>
+
+      <div class="card">
+        <h2>Supabase bağlantısı</h2>
+        <p class="hint">Kod yapıştırmak yerine otomatik senkron istiyorsan, bu panel
+          Supabase ile çalışacak şekilde hazırlandı: <code>SUPABASE_CONFIG</code>
+          alanını doldurman yeterli (dosyanın en altında, açıklamalı).
+          Şu an <strong>kapalı</strong> ve panel tamamen çevrimdışı çalışıyor.</p>
+      </div>`;
+  }
+
+  function viewDetail() {
+    const s = student(activeId);
+    if (!s) return `<div class="card"><p class="note">Önce bir öğrenci seç.</p></div>`;
+
+    const rows = skillRows(s);
+    const skills = rows.map((r) => `
+      <div class="skill">
+        <div class="hd">
+          <span>${esc(r.label)}
+            <span class="tag lv-${r.band}">${BAND_TR[r.band]}</span></span>
+          <span class="pct">${r.pct === null ? "—" : "%" + r.pct}
+            <span style="color:var(--ink-mute);font-weight:400">(${r.correct}/${r.total})</span></span>
+        </div>
+        <div class="bar"><span class="lv-${r.band}" style="width:${r.pct || 0}%"></span></div>
+      </div>`).join("");
+
+    const stories = (s.data.stories || []).slice().sort((a, b) => (b.d || "").localeCompare(a.d || ""));
+    const storyRows = stories.map((x) => {
+      const p = pct(x.s, x.n);
+      const note = (s.feedback.storyNotes || {})[x.id] || "";
+      return `
+        <tr>
+          <td>
+            <strong>${esc(x.t)}</strong><br>
+            <span style="font-size:.72rem;color:var(--ink-mute);font-family:var(--font-display)">
+              ${esc(x.lv)} · ${esc(THEMES[x.th] || x.th || "")} · ${esc(x.d || "")}${x.a > 1 ? " · " + x.a + " deneme" : ""}
+            </span>
+          </td>
+          <td class="num"><span class="tag lv-${band(p)}">${x.s}/${x.n}</span></td>
+          <td style="width:42%">
+            <textarea data-note="${esc(x.id)}" rows="2"
+              placeholder="Bu parça için not…">${esc(note)}</textarea>
+          </td>
+        </tr>`;
+    }).join("");
+
+    const lv = levelCounts(s);
+    const rubricFields = rows.map((r) => `
+      <div style="margin-bottom:10px">
+        <label class="fld">${esc(r.label).toUpperCase()}
+          <span class="tag lv-${r.band}" style="margin-left:6px">${BAND_TR[r.band]}${r.pct === null ? "" : " · %" + r.pct}</span>
+        </label>
+        <textarea data-rubric="${r.key}" rows="2"
+          placeholder="Bu beceri için şekillendirici yorum…">${esc((s.feedback.rubric || {})[r.key] || "")}</textarea>
+        <div class="bank">${BANK[r.key].map((b, i) =>
+          `<button data-fill="rubric:${r.key}:${i}">${esc(b.length > 46 ? b.slice(0, 44) + "…" : b)}</button>`).join("")}</div>
+      </div>`).join("");
+
+    return `
+      <div class="card">
+        <h2>${esc(s.data.name)}</h2>
+        <p class="hint">Kod tarihi ${esc(s.data.date || "—")} · çalışma bandı ${esc(s.data.studyLevel || "—")}${s.data.placement ? ` · yerleştirme testi: <strong>${esc(s.data.placement.level)}</strong> (${esc(s.data.placement.date || "")})` : ""}</p>
+        <div class="grid">
+          <div class="stat"><span class="n">${storyCount(s)}</span><span class="l">HİKAYE</span></div>
+          <div class="stat"><span class="n">${overallPct(s) === null ? "—" : "%" + overallPct(s)}</span><span class="l">QUIZ BAŞARISI</span></div>
+          <div class="stat"><span class="n">${(s.data.words || {}).learned || 0}</span><span class="l">ÖĞRENİLEN KELİME</span></div>
+          <div class="stat"><span class="n">${s.data.streak || 0}</span><span class="l">GÜNLÜK SERİ</span></div>
+        </div>
+        <p class="hint" style="margin-top:10px">Seviye dağılımı:
+          ${Object.keys(lv).length ? Object.entries(lv).map(([k, v]) => `${k}: ${v}`).join(" · ") : "—"}</p>
+      </div>
+
+      <div class="card">
+        <h2>Beceri profili</h2>
+        <p class="hint">Quiz soruları tipine göre ayrıştırılır; yüzdeler o beceride verilen
+          doğru cevap oranıdır. %80+ güçlü, %60-79 gelişiyor, %60 altı destek gerekli.</p>
+        ${skills}
+      </div>
+
+      <div class="card">
+        <h2>Beceri bazlı geri bildirim</h2>
+        <p class="hint">Her beceri için kısa, uygulanabilir bir sonraki adım yaz.
+          Aşağıdaki hazır ifadelere dokunarak alanı doldurabilirsin.</p>
+        ${rubricFields}
+      </div>
+
+      <div class="card">
+        <h2>Genel değerlendirme</h2>
+        <label class="fld">ÖĞRENCİYE GENEL YORUM</label>
+        <textarea data-gen="overall" rows="3"
+          placeholder="Genel değerlendirme…">${esc(s.feedback.overall || "")}</textarea>
+        <div class="bank">${BANK["genel"].map((b, i) =>
+          `<button data-fill="overall::${i}">${esc(b.length > 46 ? b.slice(0, 44) + "…" : b)}</button>`).join("")}</div>
+        <label class="fld">SIRADAKİ ADIM</label>
+        <textarea data-gen="next" rows="2"
+          placeholder="Örn. Bu hafta iki B1 çıkarım metni oku.">${esc(s.feedback.next || "")}</textarea>
+        <button class="btn btn-primary" id="btn-save-fb" style="margin-top:12px">Geri Bildirimi Kaydet</button>
+        <button class="btn btn-ghost" id="btn-fb-code" style="margin-top:12px">Öğrenci Kodu Üret</button>
+        <textarea id="fb-code-out" class="code hidden" rows="3" readonly></textarea>
+      </div>
+
+      <div class="card">
+        <h2>Hikaye bazında notlar</h2>
+        <p class="hint">Tek tek parçalara yorum yazabilirsin; raporda yalnızca dolu olanlar görünür.</p>
+        <div class="scroll-x">
+          <table>
+            <thead><tr><th>Parça</th><th style="text-align:right">Skor</th><th>Not</th></tr></thead>
+            <tbody>${storyRows || `<tr><td colspan="3">Henüz tamamlanmış parça yok.</td></tr>`}</tbody>
+          </table>
+        </div>
+        <button class="btn btn-primary" id="btn-save-notes" style="margin-top:12px">Notları Kaydet</button>
+      </div>`;
+  }
+
+  function classAggregate() {
+    const agg = {};
+    Object.keys(SKILLS).forEach((k) => { agg[k] = { correct: 0, total: 0 }; });
+    db.students.forEach((s) => {
+      Object.entries(s.data.skillStats || {}).forEach(([k, v]) => {
+        if (!agg[k]) agg[k] = { correct: 0, total: 0 };
+        agg[k].correct += v.correct; agg[k].total += v.total;
+      });
+    });
+    return agg;
+  }
+
+  function viewClass() {
+    if (!db.students.length) return `<div class="card"><p class="note">Önce öğrenci ekle.</p></div>`;
+    const agg = classAggregate();
+    const skills = Object.keys(SKILLS).map((k) => {
+      const p = pct(agg[k].correct, agg[k].total);
+      return `
+        <div class="skill">
+          <div class="hd">
+            <span>${esc(SKILLS[k])} <span class="tag lv-${band(p)}">${BAND_TR[band(p)]}</span></span>
+            <span class="pct">${p === null ? "—" : "%" + p}
+              <span style="color:var(--ink-mute);font-weight:400">(${agg[k].correct}/${agg[k].total})</span></span>
+          </div>
+          <div class="bar"><span class="lv-${band(p)}" style="width:${p || 0}%"></span></div>
+        </div>`;
+    }).join("");
+
+    const sorted = db.students.slice().sort((a, b) => (overallPct(b) || 0) - (overallPct(a) || 0));
+    const rows = sorted.map((s) => {
+      const r = skillRows(s);
+      const weakest = r.filter((x) => x.pct !== null).sort((a, b) => a.pct - b.pct)[0];
+      return `<tr>
+        <td><strong>${esc(s.data.name)}</strong></td>
+        <td class="num">${storyCount(s)}</td>
+        <td class="num">${overallPct(s) === null ? "—" : "%" + overallPct(s)}</td>
+        <td class="num">${(s.data.words || {}).learned || 0}</td>
+        <td>${weakest ? `<span class="tag lv-${weakest.band}">${esc(weakest.label)}</span>` : "—"}</td>
+      </tr>`;
+    }).join("");
+
+    const totalStories = db.students.reduce((a, s) => a + storyCount(s), 0);
+    const pcts = db.students.map(overallPct).filter((x) => x !== null);
+    const avg = pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : null;
+
+    return `
+      <div class="card">
+        <h2>Sınıf özeti</h2>
+        <div class="grid">
+          <div class="stat"><span class="n">${db.students.length}</span><span class="l">ÖĞRENCİ</span></div>
+          <div class="stat"><span class="n">${totalStories}</span><span class="l">OKUNAN PARÇA</span></div>
+          <div class="stat"><span class="n">${avg === null ? "—" : "%" + avg}</span><span class="l">ORTALAMA BAŞARI</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Sınıf beceri profili</h2>
+        <p class="hint">Tüm öğrencilerin cevapları birleştirilmiştir. En düşük çıkan beceri,
+          sınıfça çalışılacak alanı gösterir.</p>
+        ${skills}
+      </div>
+      <div class="card">
+        <h2>Öğrenci karşılaştırması</h2>
+        <div class="scroll-x">
+          <table>
+            <thead><tr><th>Öğrenci</th><th style="text-align:right">Parça</th>
+              <th style="text-align:right">Başarı</th><th style="text-align:right">Kelime</th>
+              <th>En zayıf beceri</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  function viewReports() {
+    const opts = db.students.map((s) =>
+      `<option value="${s.id}" ${s.id === activeId ? "selected" : ""}>${esc(s.data.name)}</option>`).join("");
+    return `
+      <div class="card">
+        <h2>Öğrenci karnesi (PDF)</h2>
+        <p class="hint">Tek öğrencinin beceri profili, geri bildirimi ve parça listesi.
+          Yazdır penceresinde <strong>“Hedef: PDF olarak kaydet”</strong> seç.</p>
+        <label class="fld">ÖĞRENCİ</label>
+        <select id="rep-student">${opts || `<option value="">— öğrenci yok —</option>`}</select>
+        <label class="fld" style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="rep-stories" checked style="width:auto"> Parça listesini de ekle
+        </label>
+        <button class="btn btn-primary" id="btn-pdf-student" style="margin-top:12px" ${db.students.length ? "" : "disabled"}>
+          Karneyi PDF Olarak Al</button>
+      </div>
+      <div class="card">
+        <h2>Sınıf raporu (PDF)</h2>
+        <p class="hint">Sınıf beceri profili ve tüm öğrencilerin karşılaştırma tablosu.</p>
+        <button class="btn btn-primary" id="btn-pdf-class" ${db.students.length ? "" : "disabled"}>
+          Sınıf Raporunu PDF Olarak Al</button>
+      </div>
+      <div class="card">
+        <h2>İpucu</h2>
+        <p class="note">Rapor tarayıcının yazdırma özelliğiyle üretilir, ek bir program gerekmez.
+          Telefonda: Paylaş → Yazdır → parmakla yakınlaştır → PDF olarak kaydet.</p>
+      </div>`;
+  }
+
+  // ------------------------------------------------ report builders
+  function repHead(title, sub) {
+    return `<div class="rp-head">
+      <div><h1>${esc(title)}</h1></div>
+      <div class="rp-sub">${sub}</div>
+    </div>`;
+  }
+  function repFoot() {
+    return `<div class="rp-foot">
+      <span>GenZ Reading — Okuma ve Kelime Programı</span>
+      <span>${new Date().toLocaleDateString("tr-TR")}</span>
+    </div>`;
+  }
+  function repSkillBar(label, p, correct, total) {
+    return `<div class="rp-skill avoid">
+      <span class="nm">${esc(label)}</span>
+      <span class="track"><span style="width:${p || 0}%"></span></span>
+      <span class="vl">${p === null ? "—" : "%" + p} (${correct}/${total})</span>
+    </div>`;
+  }
+
+  function buildStudentReport(id, withStories) {
+    const s = student(id);
+    if (!s) return "";
+    const rows = skillRows(s);
+    const notes = Object.entries(s.feedback.storyNotes || {}).filter(([, v]) => v && v.trim());
+    const storyById = {};
+    (s.data.stories || []).forEach((x) => { storyById[x.id] = x; });
+
+    const rubric = rows.filter((r) => (s.feedback.rubric || {})[r.key])
+      .map((r) => `<div class="rp-fb avoid"><span class="k">${esc(r.label.toUpperCase())} — ${BAND_TR[r.band]}${r.pct === null ? "" : " (%" + r.pct + ")"}</span>${esc(s.feedback.rubric[r.key])}</div>`).join("");
+
+    const storyTable = withStories && (s.data.stories || []).length ? `
+      <h2>Tamamlanan parçalar${storyCount(s) > (s.data.stories || []).length ? ` <span style="font-weight:400;font-size:0.8em">(toplam ${storyCount(s)} parçanın son ${(s.data.stories || []).length}'i)</span>` : ""}</h2>
+      <table>
+        <thead><tr><th>Parça</th><th>Seviye</th><th>Tema</th><th style="text-align:right">Skor</th><th>Tarih</th></tr></thead>
+        <tbody>${(s.data.stories || []).slice().sort((a, b) => (a.d || "").localeCompare(b.d || ""))
+          .map((x) => `<tr><td>${esc(x.t)}</td><td>${esc(x.lv)}</td><td>${esc(THEMES[x.th] || x.th || "")}</td>
+            <td style="text-align:right">${x.s}/${x.n}</td><td>${esc(x.d || "")}</td></tr>`).join("")}
+        </tbody>
+      </table>` : "";
+
+    const noteBlock = notes.length ? `
+      <h2>Parça notları</h2>
+      ${notes.map(([sid, v]) => `<div class="rp-fb avoid"><span class="k">${esc((storyById[sid] || {}).t || sid)}</span>${esc(v)}</div>`).join("")}` : "";
+
+    return `
+      ${repHead(s.data.name, `
+        ${esc(db.className || "")}${db.className && db.teacher ? " · " : ""}${esc(db.teacher || "")}<br>
+        Okuma Gelişim Karnesi`)}
+
+      <div class="rp-stats avoid">
+        <div><span class="n">${(s.data.stories || []).length}</span><span class="l">PARÇA</span></div>
+        <div><span class="n">${overallPct(s) === null ? "—" : "%" + overallPct(s)}</span><span class="l">QUIZ BAŞARISI</span></div>
+        <div><span class="n">${(s.data.words || {}).learned || 0}</span><span class="l">ÖĞRENİLEN KELİME</span></div>
+        <div><span class="n">${esc(s.data.studyLevel || "—")}</span><span class="l">ÇALIŞMA BANDI</span></div>
+      </div>
+
+      <h2>Okuma becerileri profili</h2>
+      ${rows.map((r) => repSkillBar(r.label, r.pct, r.correct, r.total)).join("")}
+
+      ${rubric ? `<h2>Beceri bazlı geri bildirim</h2>${rubric}` : ""}
+
+      ${s.feedback.overall || s.feedback.next ? `<h2>Genel değerlendirme</h2>
+        ${s.feedback.overall ? `<div class="rp-fb avoid"><span class="k">DEĞERLENDİRME</span>${esc(s.feedback.overall)}</div>` : ""}
+        ${s.feedback.next ? `<div class="rp-fb avoid"><span class="k">SIRADAKİ ADIM</span>${esc(s.feedback.next)}</div>` : ""}` : ""}
+
+      ${noteBlock}
+      ${storyTable}
+      ${repFoot()}`;
+  }
+
+  function buildClassReport() {
+    const agg = classAggregate();
+    const sorted = db.students.slice().sort((a, b) => (overallPct(b) || 0) - (overallPct(a) || 0));
+    const pcts = db.students.map(overallPct).filter((x) => x !== null);
+    const avg = pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : null;
+    const totalStories = db.students.reduce((a, s) => a + storyCount(s), 0);
+
+    return `
+      ${repHead(db.className || "Sınıf Raporu", `${esc(db.teacher || "")}<br>Sınıf Okuma Gelişim Raporu`)}
+
+      <div class="rp-stats avoid">
+        <div><span class="n">${db.students.length}</span><span class="l">ÖĞRENCİ</span></div>
+        <div><span class="n">${totalStories}</span><span class="l">OKUNAN PARÇA</span></div>
+        <div><span class="n">${avg === null ? "—" : "%" + avg}</span><span class="l">ORTALAMA BAŞARI</span></div>
+      </div>
+
+      <h2>Sınıf beceri profili</h2>
+      ${Object.keys(SKILLS).map((k) => {
+        const p = pct(agg[k].correct, agg[k].total);
+        return repSkillBar(SKILLS[k], p, agg[k].correct, agg[k].total);
+      }).join("")}
+
+      <h2>Öğrenci karşılaştırması</h2>
+      <table>
+        <thead><tr><th>Öğrenci</th><th style="text-align:right">Parça</th>
+          <th style="text-align:right">Başarı</th><th style="text-align:right">Kelime</th>
+          <th>En zayıf beceri</th></tr></thead>
+        <tbody>${sorted.map((s) => {
+          const w = skillRows(s).filter((x) => x.pct !== null).sort((a, b) => a.pct - b.pct)[0];
+          return `<tr><td>${esc(s.data.name)}</td>
+            <td style="text-align:right">${(s.data.stories || []).length}</td>
+            <td style="text-align:right">${overallPct(s) === null ? "—" : "%" + overallPct(s)}</td>
+            <td style="text-align:right">${(s.data.words || {}).learned || 0}</td>
+            <td>${w ? esc(w.label) + " (%" + w.pct + ")" : "—"}</td></tr>`;
+        }).join("")}</tbody>
+      </table>
+      ${repFoot()}`;
+  }
+
+  function printReport(html, title) {
+    const rep = document.getElementById("report");
+    rep.innerHTML = html;
+    const old = document.title;
+    document.title = title;           // becomes the suggested PDF filename
+    window.print();
+    setTimeout(() => { document.title = old; rep.innerHTML = ""; }, 800);
+  }
+
+  // ------------------------------------------------ collecting form values
+  function collectFeedback() {
+    const s = student(activeId);
+    if (!s) return;
+    document.querySelectorAll("[data-rubric]").forEach((el) => {
+      s.feedback.rubric[el.dataset.rubric] = el.value.trim();
+    });
+    document.querySelectorAll("[data-gen]").forEach((el) => {
+      s.feedback[el.dataset.gen] = el.value.trim();
+    });
+  }
+  function collectNotes() {
+    const s = student(activeId);
+    if (!s) return;
+    s.feedback.storyNotes = s.feedback.storyNotes || {};
+    document.querySelectorAll("[data-note]").forEach((el) => {
+      const v = el.value.trim();
+      if (v) s.feedback.storyNotes[el.dataset.note] = v;
+      else delete s.feedback.storyNotes[el.dataset.note];
+    });
+  }
+
+  // ------------------------------------------------ render + events
+  function render() {
+    document.querySelectorAll("#tabs button").forEach((b) =>
+      b.classList.toggle("active", b.dataset.tab === tab));
+    const p = document.getElementById("panel");
+    p.innerHTML = tab === "students" ? viewStudents()
+      : tab === "detail" ? viewDetail()
+      : tab === "class" ? viewClass()
+      : viewReports();
+  }
+
+  document.getElementById("tabs").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-tab]");
+    if (!b) return;
+    if (tab === "detail") { collectFeedback(); collectNotes(); save(); }
+    tab = b.dataset.tab;
+    render();
+  });
+
+  document.addEventListener("click", (e) => {
+    const pick = e.target.closest("[data-pick]");
+    if (pick && !e.target.closest("[data-del]")) {
+      activeId = pick.dataset.pick; tab = "detail"; render(); return;
+    }
+
+    if (e.target.closest("#theme-toggle")) {
+      const r = document.documentElement;
+      const next = r.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      r.setAttribute("data-theme", next);
+      try { localStorage.setItem("genz-theme", next); } catch (err) {}
+      return;
+    }
+
+    const del = e.target.closest("[data-del]");
+    if (del) {
+      const s = student(del.dataset.del);
+      if (s && confirm(`${s.data.name} silinsin mi? Geri bildirimleri de silinir.`)) {
+        db.students = db.students.filter((x) => x.id !== del.dataset.del);
+        if (activeId === del.dataset.del) activeId = db.students[0] ? db.students[0].id : null;
+        save(); render();
+      }
+      return;
+    }
+
+    if (e.target.closest("#btn-add")) {
+      const el = document.getElementById("in-code");
+      try {
+        db.teacher = (document.getElementById("f-teacher").value || "").trim();
+        db.className = (document.getElementById("f-class").value || "").trim();
+        const r = addStudentFromCode(el.value);
+        el.value = "";
+        toast(r.updated ? `${r.name} güncellendi.` : `${r.name} eklendi.`);
+        render();
+      } catch (err) {
+        toast("Okunamadı: " + err.message);
+      }
+      return;
+    }
+
+    const fill = e.target.closest("[data-fill]");
+    if (fill) {
+      const [kind, key, idx] = fill.dataset.fill.split(":");
+      const list = kind === "overall" ? BANK["genel"] : BANK[key];
+      const text = list[Number(idx)];
+      const target = kind === "overall"
+        ? document.querySelector('[data-gen="overall"]')
+        : document.querySelector(`[data-rubric="${key}"]`);
+      if (target) {
+        target.value = target.value.trim() ? target.value.trim() + " " + text : text;
+        target.focus();
+      }
+      return;
+    }
+
+    if (e.target.closest("#btn-save-fb")) {
+      collectFeedback(); save(); toast("Geri bildirim kaydedildi."); return;
+    }
+    if (e.target.closest("#btn-save-notes")) {
+      collectNotes(); save(); toast("Notlar kaydedildi."); return;
+    }
+
+    if (e.target.closest("#btn-fb-code")) {
+      collectFeedback(); save();
+      const s = student(activeId);
+      const pkg = {
+        teacher: db.teacher || "Öğretmenin",
+        date: new Date().toLocaleDateString("tr-TR"),
+        rubric: Object.fromEntries(Object.entries(s.feedback.rubric || {}).filter(([, v]) => v)),
+        overall: s.feedback.overall || "",
+        next: s.feedback.next || ""
+      };
+      const out = document.getElementById("fb-code-out");
+      out.value = "GZF1." + b64encode(JSON.stringify(pkg));
+      out.classList.remove("hidden");
+      out.select();
+      try { document.execCommand("copy"); toast("Kod kopyalandı — öğrenciye gönder."); }
+      catch (err) { toast("Kod üretildi, elle kopyala."); }
+      return;
+    }
+
+    if (e.target.closest("#btn-pdf-student")) {
+      collectFeedback(); collectNotes(); save();
+      const id = document.getElementById("rep-student").value;
+      const withStories = document.getElementById("rep-stories").checked;
+      const s = student(id);
+      if (!s) { toast("Öğrenci seç."); return; }
+      printReport(buildStudentReport(id, withStories), `${s.data.name} — Okuma Karnesi`);
+      return;
+    }
+    if (e.target.closest("#btn-pdf-class")) {
+      printReport(buildClassReport(), `${db.className || "Sinif"} — Okuma Raporu`);
+      return;
+    }
+
+    if (e.target.closest("#btn-export-class")) {
+      const blob = new Blob([JSON.stringify(db, null, 1)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `genz-sinif-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      return;
+    }
+    if (e.target.closest("#btn-import-class")) {
+      const inp = document.createElement("input");
+      inp.type = "file"; inp.accept = "application/json";
+      inp.onchange = () => {
+        const f = inp.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = () => {
+          try {
+            const loaded = JSON.parse(r.result);
+            if (!Array.isArray(loaded.students)) throw new Error("bozuk");
+            db = loaded; activeId = db.students[0] ? db.students[0].id : null;
+            save(); render(); toast("Sınıf yedeği yüklendi.");
+          } catch (err) { toast("Dosya okunamadı."); }
+        };
+        r.readAsText(f);
+      };
+      inp.click();
+      return;
+    }
+  });
+
+  document.addEventListener("change", (e) => {
+    if (e.target.id === "f-teacher") { db.teacher = e.target.value.trim(); save(); }
+    if (e.target.id === "f-class") { db.className = e.target.value.trim(); save(); }
+  });
+
+  window.addEventListener("beforeunload", () => {
+    if (tab === "detail") { collectFeedback(); collectNotes(); save(); }
+  });
+
+  render();
+
+  /* ==========================================================================
+     SUPABASE (opsiyonel, şu an KAPALI)
+     --------------------------------------------------------------------------
+     Kod yapıştırmak yerine otomatik senkron istersen:
+
+     1) Supabase'de bir tablo aç:
+          create table progress (
+            id text primary key,           -- öğrenci adı veya okul numarası
+            name text,
+            data jsonb,                    -- öğrenci uygulamasının ürettiği payload
+            feedback jsonb,                -- bu panelin yazdığı geri bildirim
+            updated_at timestamptz default now()
+          );
+     2) Aşağıdaki iki alanı doldur ve ENABLED'ı true yap.
+     3) Öğrenci uygulamasında da aynı şekilde yazma çağrısı eklenir.
+
+     Panelin geri kalanı değişmez: veri yine {name, data, feedback} biçiminde
+     tutulduğu için tablo satırları doğrudan db.students'a maplenebilir.
+     ========================================================================== */
+  const SUPABASE_CONFIG = {
+    ENABLED: false,
+    URL: "",        // örn. https://xxxx.supabase.co
+    ANON_KEY: "",
+    TABLE: "progress"
+  };
+
+  async function supabaseFetchAll() {
+    if (!SUPABASE_CONFIG.ENABLED) return null;
+    const res = await fetch(
+      `${SUPABASE_CONFIG.URL}/rest/v1/${SUPABASE_CONFIG.TABLE}?select=*`,
+      { headers: { apikey: SUPABASE_CONFIG.ANON_KEY,
+                   Authorization: "Bearer " + SUPABASE_CONFIG.ANON_KEY } });
+    if (!res.ok) throw new Error("Supabase okunamadı");
+    const rows = await res.json();
+    return rows.map((r) => ({
+      id: r.id, data: r.data, updated: r.updated_at,
+      feedback: r.feedback || { rubric: {}, storyNotes: {}, overall: "", next: "" }
+    }));
+  }
+
+  async function supabasePushFeedback(studentId, feedback) {
+    if (!SUPABASE_CONFIG.ENABLED) return;
+    await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/${SUPABASE_CONFIG.TABLE}?id=eq.${encodeURIComponent(studentId)}`, {
+      method: "PATCH",
+      headers: { apikey: SUPABASE_CONFIG.ANON_KEY,
+                 Authorization: "Bearer " + SUPABASE_CONFIG.ANON_KEY,
+                 "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify({ feedback })
+    });
+  }
+
+  // dışarıdan erişilebilsin diye (konsoldan test için)
+  window.GZTeacher = { supabaseFetchAll, supabasePushFeedback, SUPABASE_CONFIG };
+})();
+</script>
+</body>
+</html>

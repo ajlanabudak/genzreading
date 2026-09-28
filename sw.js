@@ -1,6 +1,6 @@
 // GenZ Reading — service worker
 // Bump CACHE_NAME on every content/app update to invalidate old caches.
-const CACHE_NAME = "genz-reading-e2730eb140";
+const CACHE_NAME = "genz-reading-cfed83b0a1";
 const AUDIO_CACHE = "genz-reading-audio";   // sürümden bağımsız: sesler yeniden inmesin
 const CORE_ASSETS = [
   "./",
@@ -46,18 +46,16 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   const isCoreAsset = url.origin === self.location.origin;
 
-  // Ses dosyaları (uygulamayla aynı yerden, /audio/ altından): önce önbellek. Bir kez indirilen
-  // hikaye sesi çevrimdışı da çalar ve sürüm yükseltmelerinde silinmez —
-  // bu yüzden ayrı ve sürümsüz bir önbellekte tutulur.
+  // Ses dosyaları (uygulamayla aynı yerden, /audio/ altından). Ayrı ve sürümsüz bir önbellekte
+  // tutulur: uygulama güncellense de indirilen sesler silinmez, çevrimdışı da çalar.
   if (/\/audio\//.test(url.pathname)) {
-    event.respondWith(
-      caches.open(AUDIO_CACHE).then((cache) =>
-        cache.match(req).then((hit) => hit || fetch(req).then((res) => {
-          if (res.ok) cache.put(req, res.clone());
-          return res;
-        }))
-      )
-    );
+    if (/\.json$/.test(url.pathname)) {
+      // manifest.json ve kelime damgaları: ÖNCE AĞ (yeni eklenen sesler hemen görünsün),
+      // çevrimdışıysa önbellekteki son sürüm.
+      event.respondWith(audioJsonNetworkFirst(req));
+    } else {
+      event.respondWith(serveAudio(req));
+    }
     return;
   }
 
@@ -83,3 +81,52 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+// ---------------------------------------------------------------- ses yardımcıları
+async function audioJsonNetworkFirst(req) {
+  const cache = await caches.open(AUDIO_CACHE);
+  try {
+    const res = await fetch(req);
+    if (res.ok) cache.put(req.url, res.clone());
+    return res;
+  } catch (e) {
+    return (await cache.match(req.url)) || new Response("", { status: 404 });
+  }
+}
+
+// <audio> öğesi ses dosyasını Range isteğiyle ister (iPhone Safari'de zorunlu, seek için gerekli).
+// Cache API kısmi (206) yanıtları saklayamaz; bu yüzden dosya bir kez TAM indirilip önbelleğe
+// konur, Range istekleri de önbellekten dilimlenerek 206 olarak yanıtlanır.
+async function serveAudio(req) {
+  const cache = await caches.open(AUDIO_CACHE);
+  let res = await cache.match(req.url);
+  if (!res) {
+    const net = await fetch(req.url);              // Range'siz, tam dosya
+    if (!net.ok) return net;
+    await cache.put(req.url, net.clone());
+    res = net;
+  }
+  const range = req.headers.get("range");
+  if (!range) return res;
+
+  const buf = await res.arrayBuffer();
+  const size = buf.byteLength;
+  const m = /bytes=(\d*)-(\d*)/.exec(range);
+  let start = m && m[1] !== "" ? parseInt(m[1], 10) : 0;
+  let end = m && m[2] !== "" ? parseInt(m[2], 10) : size - 1;
+  if (m && m[1] === "" && m[2] !== "") { start = Math.max(0, size - parseInt(m[2], 10)); end = size - 1; }  // bytes=-N
+  if (isNaN(start) || start >= size) {
+    return new Response("", { status: 416, headers: { "Content-Range": `bytes */${size}` } });
+  }
+  end = Math.min(end, size - 1);
+  return new Response(buf.slice(start, end + 1), {
+    status: 206,
+    statusText: "Partial Content",
+    headers: {
+      "Content-Type": res.headers.get("Content-Type") || "audio/mpeg",
+      "Content-Range": `bytes ${start}-${end}/${size}`,
+      "Content-Length": String(end - start + 1),
+      "Accept-Ranges": "bytes"
+    }
+  });
+}

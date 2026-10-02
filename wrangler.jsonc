@@ -1,6 +1,9 @@
 {
   "name": "genzreading",
   "compatibility_date": "2025-09-01",
+  "observability": {
+    "enabled": false
+  },
   "assets": {
     "directory": "./"
   }

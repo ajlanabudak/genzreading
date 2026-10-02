@@ -1,6 +1,6 @@
 // GenZ Reading — service worker
 // Bump CACHE_NAME on every content/app update to invalidate old caches.
-const CACHE_NAME = "genz-reading-241995e308";
+const CACHE_NAME = "genz-reading-4b76db4f38";
 const AUDIO_CACHE = "genz-reading-audio";   // sürümden bağımsız: sesler yeniden inmesin
 const CORE_ASSETS = [
   "./",
@@ -10,6 +10,8 @@ const CORE_ASSETS = [
   "./manifest.json",
   "./data/stories.json",
   "./data/lexicon.json",
+  "./fonts/literata.woff2",
+  "./fonts/space-grotesk.woff2",
   "./icons/icon-180.png",
   "./icons/icon-192.png",
   "./icons/icon-maskable-192.png",
